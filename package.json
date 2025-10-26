@@ -1,0 +1,68 @@
+{
+  "name": "claude",
+  "author": "Ilia Breitburg",
+  "version": "1.1.0",
+  "keywords": [
+    "pebble-app"
+  ],
+  "private": true,
+  "dependencies": {},
+  "pebble": {
+    "displayName": "Claude",
+    "uuid": "97d61d2b-f092-4e22-b4d2-265ce8299352",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "basalt",
+      "diorite",
+      "emery"
+    ],
+    "watchapp": {
+      "watchface": false
+    },
+    "capabilities": [
+      "configurable"
+    ],
+    "messageKeys": [
+      "REQUEST_CHAT",
+      "RESPONSE_CHUNK",
+      "RESPONSE_END",
+      "READY_STATUS"
+    ],
+    "resources": {
+      "media": [
+        {
+          "type": "raw",
+          "name": "CLAUDE_L",
+          "file": "claude-l.pdc"
+        },
+        {
+          "type": "raw",
+          "name": "CLAUDE_S",
+          "file": "claude-s.pdc"
+        },
+        {
+          "type": "png",
+          "name": "IMAGE_MENU_ICON",
+          "file": "icon.png",
+          "menuIcon": true
+        },
+        {
+          "type": "png",
+          "name": "ACTION_ICON_DICTATION",
+          "file": "action_bar_icons/dictation.png"
+        },
+        {
+          "type": "png",
+          "name": "ACTION_ICON_UP",
+          "file": "action_bar_icons/up.png"
+        },
+        {
+          "type": "png",
+          "name": "ACTION_ICON_DOWN",
+          "file": "action_bar_icons/down.png"
+        }
+      ]
+    }
+  }
+}
