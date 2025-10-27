@@ -58,7 +58,7 @@ MessageBubble* message_bubble_create(const char *text, bool is_user, int max_wid
     MESSAGE_PADDING,
     MESSAGE_PADDING,
     text_size.w,
-    text_size.h
+    bubble_height - MESSAGE_PADDING
   ));
   text_layer_set_text(bubble->text_layer, text);
   text_layer_set_font(bubble->text_layer, font);
@@ -114,7 +114,7 @@ void message_bubble_set_text(MessageBubble *bubble, const char *text) {
   // Update text layer size
   GRect text_frame = layer_get_frame(text_layer_get_layer(bubble->text_layer));
   text_frame.size.w = text_size.w;
-  text_frame.size.h = text_size.h;
+  text_frame.size.h = bubble_height - MESSAGE_PADDING;
   layer_set_frame(text_layer_get_layer(bubble->text_layer), text_frame);
 
   layer_mark_dirty(bubble->layer);
