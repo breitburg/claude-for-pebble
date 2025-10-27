@@ -2,6 +2,7 @@
 
 #define MESSAGE_PADDING 10
 #define MESSAGE_FONT FONT_KEY_GOTHIC_24_BOLD
+#define DESCENDER_BUFFER 3  // Small buffer for descenders (y, g, p, q, etc.)
 
 struct MessageBubble {
   Layer *layer;
@@ -53,12 +54,12 @@ MessageBubble* message_bubble_create(const char *text, bool is_user, int max_wid
   layer_set_update_proc(bubble->layer, background_update_proc);
   *(MessageBubble**)layer_get_data(bubble->layer) = bubble;
 
-  // Create text layer spanning to bottom (padding only at top and sides)
+  // Create text layer with small buffer for descenders
   bubble->text_layer = text_layer_create(GRect(
     MESSAGE_PADDING,
     MESSAGE_PADDING,
     text_size.w,
-    bubble_height - MESSAGE_PADDING  // Extends to bottom of bubble
+    text_size.h + DESCENDER_BUFFER
   ));
   text_layer_set_text(bubble->text_layer, text);
   text_layer_set_font(bubble->text_layer, font);
@@ -111,10 +112,10 @@ void message_bubble_set_text(MessageBubble *bubble, const char *text) {
   frame.size.h = bubble_height;
   layer_set_frame(bubble->layer, frame);
 
-  // Update text layer size to span to bottom (padding only at top and sides)
+  // Update text layer size with small buffer for descenders
   GRect text_frame = layer_get_frame(text_layer_get_layer(bubble->text_layer));
   text_frame.size.w = text_size.w;
-  text_frame.size.h = bubble_height - MESSAGE_PADDING;  // Extends to bottom of bubble
+  text_frame.size.h = text_size.h + DESCENDER_BUFFER;
   layer_set_frame(text_layer_get_layer(bubble->text_layer), text_frame);
 
   layer_mark_dirty(bubble->layer);
