@@ -47,7 +47,7 @@ function streamClaudeResponse(messages) {
         hasMcpServers = true;
       }
     } catch (e) {
-      // Will be handled later
+      // JSON parsing error - MCP functionality will be skipped, detailed error logged below
     }
   }
 
