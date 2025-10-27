@@ -1,0 +1,51 @@
+name: Copilot Setup Steps
+
+on:
+  workflow_dispatch:
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            python3-pip \
+            python3-venv \
+            nodejs \
+            npm \
+            libsdl1.2debian \
+            libfdt1
+
+      - name: Install uv (Python package manager)
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install Pebble CLI tool
+        run: |
+          uv tool install pebble-tool
+
+      - name: Download Pebble SDK
+        run: |
+          pebble sdk install latest
+
+      - name: Verify Pebble installation
+        run: |
+          pebble --version
+          pebble sdk list
+
+      - name: Install Node.js dependencies
+        if: hashFiles('package.json') != ''
+        run: npm install
