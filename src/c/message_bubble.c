@@ -65,6 +65,9 @@ MessageBubble* message_bubble_create(const char *text, bool is_user, int max_wid
   text_layer_set_text_alignment(bubble->text_layer, GTextAlignmentLeft);
   text_layer_set_background_color(bubble->text_layer, GColorClear);
   text_layer_set_text_color(bubble->text_layer, GColorBlack);
+#ifdef PBL_ROUND
+  text_layer_enable_screen_text_flow_and_paging(bubble->text_layer, 5);
+#endif
   layer_add_child(bubble->layer, text_layer_get_layer(bubble->text_layer));
 
   return bubble;

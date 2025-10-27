@@ -101,7 +101,7 @@ static void window_load(Window *window) {
   claude_spark_set_frame(s_empty_spark, 4);
 
   // Create and position text below spark
-  int text_margin = 10;
+  int text_margin = PBL_IF_ROUND_ELSE(20, 10);
   int text_y = start_y + spark_size + gap;
   s_empty_text_layer = text_layer_create(
     GRect(text_margin, text_y, s_content_width - text_margin * 2, text_height)
@@ -111,6 +111,9 @@ static void window_load(Window *window) {
   text_layer_set_text_alignment(s_empty_text_layer, GTextAlignmentCenter);
   text_layer_set_background_color(s_empty_text_layer, GColorClear);
   text_layer_set_text_color(s_empty_text_layer, GColorBlack);
+#ifdef PBL_ROUND
+  text_layer_enable_screen_text_flow_and_paging(s_empty_text_layer, 5);
+#endif
   layer_add_child(window_layer, text_layer_get_layer(s_empty_text_layer));
 
   // Build the UI from message data

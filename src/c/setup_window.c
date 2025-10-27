@@ -45,7 +45,7 @@ static void window_load(Window *window) {
   s_font = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
 
   // Create custom layer that spans full screen
-  int margin = 20;
+  int margin = PBL_IF_ROUND_ELSE(30, 20);
   s_message_layer = layer_create(GRect(
     margin,
     0,

@@ -55,6 +55,9 @@ ChatFooter* chat_footer_create(int width) {
   text_layer_set_text_alignment(footer->text_layer, GTextAlignmentLeft);
   text_layer_set_text_color(footer->text_layer, GColorDarkGray);
   text_layer_set_background_color(footer->text_layer, GColorClear);
+#ifdef PBL_ROUND
+  text_layer_enable_screen_text_flow_and_paging(footer->text_layer, 5);
+#endif
   layer_add_child(footer->layer, text_layer_get_layer(footer->text_layer));
 
   return footer;
