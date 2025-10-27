@@ -53,10 +53,10 @@ MessageBubble* message_bubble_create(const char *text, bool is_user, int max_wid
   layer_set_update_proc(bubble->layer, background_update_proc);
   *(MessageBubble**)layer_get_data(bubble->layer) = bubble;
 
-  // Create text layer (positioned at MESSAGE_PADDING inside bubble)
+  // Create text layer (positioned to center vertically, with extra height for descenders)
   bubble->text_layer = text_layer_create(GRect(
     MESSAGE_PADDING,
-    MESSAGE_PADDING,
+    MESSAGE_PADDING / 2,
     text_size.w,
     bubble_height - MESSAGE_PADDING
   ));
@@ -111,10 +111,13 @@ void message_bubble_set_text(MessageBubble *bubble, const char *text) {
   frame.size.h = bubble_height;
   layer_set_frame(bubble->layer, frame);
 
-  // Update text layer size
-  GRect text_frame = layer_get_frame(text_layer_get_layer(bubble->text_layer));
-  text_frame.size.w = text_size.w;
-  text_frame.size.h = bubble_height - MESSAGE_PADDING;
+  // Update text layer size and position (centered vertically with extra height for descenders)
+  GRect text_frame = GRect(
+    MESSAGE_PADDING,
+    MESSAGE_PADDING / 2,
+    text_size.w,
+    bubble_height - MESSAGE_PADDING
+  );
   layer_set_frame(text_layer_get_layer(bubble->text_layer), text_frame);
 
   layer_mark_dirty(bubble->layer);
