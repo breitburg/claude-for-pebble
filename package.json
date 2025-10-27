@@ -6,7 +6,9 @@
     "pebble-app"
   ],
   "private": true,
-  "dependencies": {},
+  "dependencies": {
+    "pebble-clay": "^1.0.4"
+  },
   "pebble": {
     "displayName": "Claude",
     "uuid": "97d61d2b-f092-4e22-b4d2-265ce8299352",
@@ -27,7 +29,12 @@
       "REQUEST_CHAT",
       "RESPONSE_CHUNK",
       "RESPONSE_END",
-      "READY_STATUS"
+      "READY_STATUS",
+      "api_key",
+      "base_url",
+      "model",
+      "system_message",
+      "web_search_enabled"
     ],
     "resources": {
       "media": [

@@ -1,0 +1,78 @@
+[
+  {
+    "type": "heading",
+    "defaultValue": "Claude for Pebble Settings"
+  },
+  {
+    "type": "text",
+    "defaultValue": "This app is unaffiliated with Anthropic and was made by independent developers as an open-source initiative."
+  },
+  {
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
+        "defaultValue": "API Configuration"
+      },
+      {
+        "type": "input",
+        "messageKey": "api_key",
+        "label": "Anthropic API Key",
+        "description": "Enter your Anthropic API key (starts with sk-ant-)",
+        "defaultValue": "",
+        "attributes": {
+          "placeholder": "sk-ant-...",
+          "type": "text"
+        }
+      },
+      {
+        "type": "heading",
+        "defaultValue": "Advanced Settings"
+      },
+      {
+        "type": "input",
+        "messageKey": "base_url",
+        "label": "Base URL",
+        "description": "API endpoint URL",
+        "defaultValue": "https://api.anthropic.com/v1/messages",
+        "attributes": {
+          "placeholder": "https://api.anthropic.com/v1/messages",
+          "type": "text"
+        }
+      },
+      {
+        "type": "input",
+        "messageKey": "model",
+        "label": "Model",
+        "description": "Claude model to use",
+        "defaultValue": "claude-haiku-4-5",
+        "attributes": {
+          "placeholder": "claude-haiku-4-5",
+          "type": "text"
+        }
+      },
+      {
+        "type": "input",
+        "messageKey": "system_message",
+        "label": "System Message",
+        "description": "Custom system message for Claude",
+        "defaultValue": "You're running on a Pebble smartwatch. Please respond in plain text without any formatting, keeping your responses within 1-3 sentences.",
+        "attributes": {
+          "placeholder": "System message...",
+          "type": "text"
+        }
+      },
+      {
+        "type": "toggle",
+        "messageKey": "web_search_enabled",
+        "label": "Enable Web Search",
+        "description": "Allow Claude to search the web",
+        "defaultValue": false
+      }
+    ]
+  },
+  {
+    "type": "submit",
+    "defaultValue": "Save Settings"
+  }
+]

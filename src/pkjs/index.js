@@ -1,3 +1,8 @@
+// Initialize Clay for configuration
+var Clay = require('pebble-clay');
+var clayConfig = require('./config.json');
+var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
+
 // Parse encoded conversation string "[U]msg1[A]msg2..." into messages array
 function parseConversation(encoded) {
   var messages = [];
@@ -149,46 +154,22 @@ Pebble.addEventListener('appmessage', function (e) {
   }
 });
 
-// Listen for when the configuration page is opened
-Pebble.addEventListener('showConfiguration', function () {
-  // Get existing settings
-  var apiKey = localStorage.getItem('api_key') || '';
-  var baseUrl = localStorage.getItem('base_url') || '';
-  var model = localStorage.getItem('model') || '';
-  var systemMessage = localStorage.getItem('system_message') || '';
-  var webSearchEnabled = localStorage.getItem('web_search_enabled') || 'false';
-
-  // Build configuration URL
-  var url = 'https://breitburg.github.io/claude-for-pebble/config/';
-  url += '?api_key=' + encodeURIComponent(apiKey);
-  url += '&base_url=' + encodeURIComponent(baseUrl);
-  url += '&model=' + encodeURIComponent(model);
-  url += '&system_message=' + encodeURIComponent(systemMessage);
-  url += '&web_search_enabled=' + encodeURIComponent(webSearchEnabled);
-
-  console.log('Opening configuration page: ' + url);
-  Pebble.openURL(url);
+// Handle configuration with Clay
+Pebble.addEventListener('showConfiguration', function(e) {
+  Pebble.openURL(clay.generateUrl());
 });
 
-// Listen for when the configuration page is closed
-Pebble.addEventListener('webviewclosed', function (e) {
-  if (e && e.response) {
-    var settings = JSON.parse(decodeURIComponent(e.response));
-    console.log('Settings received: ' + JSON.stringify(settings));
-
-    // Save or clear settings in local storage
-    var keys = ['api_key', 'base_url', 'model', 'system_message', 'web_search_enabled'];
-    keys.forEach(function(key) {
-      if (settings[key] && settings[key].trim() !== '') {
-        localStorage.setItem(key, settings[key]);
-        console.log(key + ' saved');
-      } else {
-        localStorage.removeItem(key);
-        console.log(key + ' cleared');
-      }
-    });
-
-    // Send updated ready status to watch
-    sendReadyStatus();
+Pebble.addEventListener('webviewclosed', function(e) {
+  if (e && !e.response) {
+    return;
   }
+
+  // Get the keys and values from Clay
+  var dict = clay.getItemsDict();
+  var settings = JSON.parse(e.response);
+
+  // Clay handles saving to localStorage automatically
+  // Just need to send updated ready status to watch
+  console.log('Configuration closed, settings saved');
+  sendReadyStatus();
 });
