@@ -38,11 +38,29 @@ function streamClaudeResponse(messages) {
 
   console.log('Sending request to Claude API with ' + messages.length + ' messages');
 
+  // Check if MCP servers are configured to determine if we need the beta header
+  var hasMcpServers = false;
+  if (mcpServers && mcpServers.trim().length > 0) {
+    try {
+      var servers = JSON.parse(mcpServers);
+      if (servers && Array.isArray(servers) && servers.length > 0) {
+        hasMcpServers = true;
+      }
+    } catch (e) {
+      // Will be handled later
+    }
+  }
+
   var xhr = new XMLHttpRequest();
   xhr.open('POST', baseUrl, true);
   xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.setRequestHeader('x-api-key', apiKey);
   xhr.setRequestHeader('anthropic-version', '2023-06-01');
+  
+  // Add beta header if MCP servers are configured
+  if (hasMcpServers) {
+    xhr.setRequestHeader('anthropic-beta', 'mcp-client-2025-04-04');
+  }
 
   var responseText = '';
 
