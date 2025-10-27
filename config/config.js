@@ -23,6 +23,7 @@ var apiKey = getQueryParam('api_key');
 var baseUrl = getQueryParam('base_url');
 var model = getQueryParam('model');
 var systemMessage = getQueryParam('system_message');
+var webSearchEnabled = getQueryParam('web_search_enabled');
 
 // Get return_to for emulator support (falls back to pebblejs://close# for real hardware)
 var returnTo = getQueryParam('return_to') || 'pebblejs://close#';
@@ -39,6 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('base-url').value = baseUrl || defaults.base_url;
   document.getElementById('model').value = model || defaults.model;
   document.getElementById('system-message').value = systemMessage || defaults.system_message;
+  document.getElementById('web-search').checked = webSearchEnabled === 'true';
 
   // Function to toggle advanced fields visibility
   function toggleAdvancedFields() {
@@ -60,7 +62,8 @@ document.addEventListener('DOMContentLoaded', function() {
       api_key: apiKeyInput.value.trim(),
       base_url: document.getElementById('base-url').value.trim(),
       model: document.getElementById('model').value.trim(),
-      system_message: document.getElementById('system-message').value.trim()
+      system_message: document.getElementById('system-message').value.trim(),
+      web_search_enabled: document.getElementById('web-search').checked.toString()
     };
 
     // Send settings back to Pebble (works for both emulator and real hardware)
@@ -75,6 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('base-url').value = defaults.base_url;
     document.getElementById('model').value = defaults.model;
     document.getElementById('system-message').value = defaults.system_message;
+    document.getElementById('web-search').checked = false;
 
     // Toggle advanced fields visibility
     toggleAdvancedFields();
@@ -84,7 +88,8 @@ document.addEventListener('DOMContentLoaded', function() {
       api_key: '',
       base_url: defaults.base_url,
       model: defaults.model,
-      system_message: defaults.system_message
+      system_message: defaults.system_message,
+      web_search_enabled: 'false'
     };
 
     var url = returnTo + encodeURIComponent(JSON.stringify(settings));

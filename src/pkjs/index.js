@@ -27,6 +27,7 @@ function streamClaudeResponse(messages) {
   var baseUrl = localStorage.getItem('base_url') || 'https://api.anthropic.com/v1/messages';
   var model = localStorage.getItem('model') || 'claude-haiku-4-5';
   var systemMessage = localStorage.getItem('system_message') || "You're running on a Pebble smartwatch. Please respond in plain text without any formatting, keeping your responses within 1-3 sentences.";
+  var webSearchEnabled = localStorage.getItem('web_search_enabled') === 'true';
 
   if (!apiKey) {
     console.log('No API key configured');
@@ -105,6 +106,15 @@ function streamClaudeResponse(messages) {
     requestBody.system = systemMessage;
   }
 
+  // Add web search tool if enabled
+  if (webSearchEnabled) {
+    requestBody.tools = [{
+      type: 'web_search_20250305',
+      name: 'web_search',
+      max_uses: 5
+    }];
+  }
+
   console.log('Request body: ' + JSON.stringify(requestBody));
   xhr.send(JSON.stringify(requestBody));
 }
@@ -146,6 +156,7 @@ Pebble.addEventListener('showConfiguration', function () {
   var baseUrl = localStorage.getItem('base_url') || '';
   var model = localStorage.getItem('model') || '';
   var systemMessage = localStorage.getItem('system_message') || '';
+  var webSearchEnabled = localStorage.getItem('web_search_enabled') || 'false';
 
   // Build configuration URL
   var url = 'https://breitburg.github.io/claude-for-pebble/config/';
@@ -153,6 +164,7 @@ Pebble.addEventListener('showConfiguration', function () {
   url += '&base_url=' + encodeURIComponent(baseUrl);
   url += '&model=' + encodeURIComponent(model);
   url += '&system_message=' + encodeURIComponent(systemMessage);
+  url += '&web_search_enabled=' + encodeURIComponent(webSearchEnabled);
 
   console.log('Opening configuration page: ' + url);
   Pebble.openURL(url);
@@ -165,7 +177,7 @@ Pebble.addEventListener('webviewclosed', function (e) {
     console.log('Settings received: ' + JSON.stringify(settings));
 
     // Save or clear settings in local storage
-    var keys = ['api_key', 'base_url', 'model', 'system_message'];
+    var keys = ['api_key', 'base_url', 'model', 'system_message', 'web_search_enabled'];
     keys.forEach(function(key) {
       if (settings[key] && settings[key].trim() !== '') {
         localStorage.setItem(key, settings[key]);
