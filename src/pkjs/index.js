@@ -38,16 +38,33 @@ function streamClaudeResponse(messages) {
 
   console.log('Sending request to Claude API with ' + messages.length + ' messages');
 
-  // Check if MCP servers are configured to determine if we need the beta header
-  var hasMcpServers = false;
+  // Validate and parse MCP servers configuration
+  var validMcpServers = [];
   if (mcpServers && mcpServers.trim().length > 0) {
     try {
       var servers = JSON.parse(mcpServers);
-      if (servers && Array.isArray(servers) && servers.length > 0) {
-        hasMcpServers = true;
+      if (Array.isArray(servers)) {
+        for (var i = 0; i < servers.length; i++) {
+          var server = servers[i];
+          if (server && typeof server === 'object' && server.url && typeof server.url === 'string') {
+            var url = server.url.trim();
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+              var validServer = { url: url };
+              if (server.headers && typeof server.headers === 'object' && !Array.isArray(server.headers)) {
+                validServer.headers = server.headers;
+              }
+              validMcpServers.push(validServer);
+            } else {
+              console.log('MCP server URL must start with http:// or https://');
+            }
+          }
+        }
+      } else {
+        console.log('MCP servers must be a valid JSON array');
       }
     } catch (e) {
-      // JSON parsing error - MCP functionality will be skipped, detailed error logged below
+      console.log('Failed to parse MCP servers JSON, clearing invalid configuration');
+      localStorage.removeItem('mcp_servers');
     }
   }
 
@@ -58,7 +75,7 @@ function streamClaudeResponse(messages) {
   xhr.setRequestHeader('anthropic-version', '2023-06-01');
   
   // Add beta header if MCP servers are configured
-  if (hasMcpServers) {
+  if (validMcpServers.length > 0) {
     xhr.setRequestHeader('anthropic-beta', 'mcp-client-2025-04-04');
   }
 
@@ -134,41 +151,9 @@ function streamClaudeResponse(messages) {
     }];
   }
 
-  // Add MCP connector configuration if provided
-  if (mcpServers && mcpServers.trim().length > 0) {
-    try {
-      var servers = JSON.parse(mcpServers);
-      // Validate that servers is an array
-      if (servers && Array.isArray(servers) && servers.length > 0) {
-        // Validate each server has a url field
-        var validServers = [];
-        for (var i = 0; i < servers.length; i++) {
-          var server = servers[i];
-          if (server && typeof server === 'object' && server.url && typeof server.url === 'string') {
-            var url = server.url.trim();
-            // Basic URL validation - must start with http:// or https://
-            if (url.startsWith('http://') || url.startsWith('https://')) {
-              var validServer = { url: url };
-              // Add headers if they exist and are valid
-              if (server.headers && typeof server.headers === 'object' && !Array.isArray(server.headers)) {
-                validServer.headers = server.headers;
-              }
-              validServers.push(validServer);
-            } else {
-              console.log('MCP server URL must start with http:// or https://');
-            }
-          }
-        }
-        
-        if (validServers.length > 0) {
-          requestBody.mcp_connector = validServers;
-        }
-      } else {
-        console.log('MCP servers must be a valid JSON array');
-      }
-    } catch (e) {
-      console.log('Failed to parse MCP servers JSON');
-    }
+  // Add MCP connector configuration if available
+  if (validMcpServers.length > 0) {
+    requestBody.mcp_connector = validMcpServers;
   }
 
   console.log('Request body: ' + JSON.stringify(requestBody));
