@@ -50,12 +50,8 @@
       <td colspan="2"><h3>Remote MCP Servers</h3></td>
     </tr>
     <tr class="advanced-field">
-      <td><label for="mcp-url">MCP Server URL</label></td>
-      <td><input type="text" id="mcp-url" placeholder="https://your-mcp-server.com/mcp"></td>
-    </tr>
-    <tr class="advanced-field">
-      <td><label for="mcp-headers">MCP Headers (JSON)</label></td>
-      <td><textarea id="mcp-headers" rows="3" placeholder='{"Authorization": "Bearer your-token"}'></textarea></td>
+      <td><label for="mcp-servers">MCP Servers (JSON Array)</label></td>
+      <td><textarea id="mcp-servers" rows="6" placeholder='[{"url": "https://mcp-server-1.com/mcp", "headers": {"Authorization": "Bearer token1"}}, {"url": "https://mcp-server-2.com/mcp"}]'></textarea></td>
     </tr>
   </table>
 

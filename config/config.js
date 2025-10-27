@@ -24,8 +24,7 @@ var baseUrl = getQueryParam('base_url');
 var model = getQueryParam('model');
 var systemMessage = getQueryParam('system_message');
 var webSearchEnabled = getQueryParam('web_search_enabled');
-var mcpUrl = getQueryParam('mcp_url');
-var mcpHeaders = getQueryParam('mcp_headers');
+var mcpServers = getQueryParam('mcp_servers');
 
 // Get return_to for emulator support (falls back to pebblejs://close# for real hardware)
 var returnTo = getQueryParam('return_to') || 'pebblejs://close#';
@@ -43,8 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('model').value = model || defaults.model;
   document.getElementById('system-message').value = systemMessage || defaults.system_message;
   document.getElementById('web-search').checked = webSearchEnabled === 'true';
-  document.getElementById('mcp-url').value = mcpUrl || '';
-  document.getElementById('mcp-headers').value = mcpHeaders || '';
+  document.getElementById('mcp-servers').value = mcpServers || '';
 
   // Function to toggle advanced fields visibility
   function toggleAdvancedFields() {
@@ -68,8 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
       model: document.getElementById('model').value.trim(),
       system_message: document.getElementById('system-message').value.trim(),
       web_search_enabled: document.getElementById('web-search').checked.toString(),
-      mcp_url: document.getElementById('mcp-url').value.trim(),
-      mcp_headers: document.getElementById('mcp-headers').value.trim()
+      mcp_servers: document.getElementById('mcp-servers').value.trim()
     };
 
     // Send settings back to Pebble (works for both emulator and real hardware)
@@ -85,8 +82,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('model').value = defaults.model;
     document.getElementById('system-message').value = defaults.system_message;
     document.getElementById('web-search').checked = false;
-    document.getElementById('mcp-url').value = '';
-    document.getElementById('mcp-headers').value = '';
+    document.getElementById('mcp-servers').value = '';
 
     // Toggle advanced fields visibility
     toggleAdvancedFields();
@@ -98,8 +94,7 @@ document.addEventListener('DOMContentLoaded', function() {
       model: defaults.model,
       system_message: defaults.system_message,
       web_search_enabled: 'false',
-      mcp_url: '',
-      mcp_headers: ''
+      mcp_servers: ''
     };
 
     var url = returnTo + encodeURIComponent(JSON.stringify(settings));

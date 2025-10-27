@@ -28,8 +28,7 @@ function streamClaudeResponse(messages) {
   var model = localStorage.getItem('model') || 'claude-haiku-4-5';
   var systemMessage = localStorage.getItem('system_message') || "You're running on a Pebble smartwatch. Please respond in plain text without any formatting, keeping your responses within 1-3 sentences.";
   var webSearchEnabled = localStorage.getItem('web_search_enabled') === 'true';
-  var mcpUrl = localStorage.getItem('mcp_url');
-  var mcpHeaders = localStorage.getItem('mcp_headers');
+  var mcpServers = localStorage.getItem('mcp_servers');
 
   if (!apiKey) {
     console.log('No API key configured');
@@ -118,24 +117,33 @@ function streamClaudeResponse(messages) {
   }
 
   // Add MCP connector configuration if provided
-  if (mcpUrl && mcpUrl.trim().length > 0) {
-    requestBody.mcp_connector = {
-      url: mcpUrl.trim()
-    };
-
-    // Parse and add headers if provided
-    if (mcpHeaders && mcpHeaders.trim().length > 0) {
-      try {
-        var headers = JSON.parse(mcpHeaders);
-        // Validate that headers is an object
-        if (headers && typeof headers === 'object' && !Array.isArray(headers)) {
-          requestBody.mcp_connector.headers = headers;
-        } else {
-          console.log('MCP headers must be a valid JSON object');
+  if (mcpServers && mcpServers.trim().length > 0) {
+    try {
+      var servers = JSON.parse(mcpServers);
+      // Validate that servers is an array
+      if (servers && Array.isArray(servers) && servers.length > 0) {
+        // Validate each server has a url field
+        var validServers = [];
+        for (var i = 0; i < servers.length; i++) {
+          var server = servers[i];
+          if (server && typeof server === 'object' && server.url && typeof server.url === 'string') {
+            var validServer = { url: server.url.trim() };
+            // Add headers if they exist and are valid
+            if (server.headers && typeof server.headers === 'object' && !Array.isArray(server.headers)) {
+              validServer.headers = server.headers;
+            }
+            validServers.push(validServer);
+          }
         }
-      } catch (e) {
-        console.log('Failed to parse MCP headers JSON');
+        
+        if (validServers.length > 0) {
+          requestBody.mcp_connector = validServers;
+        }
+      } else {
+        console.log('MCP servers must be a valid JSON array');
       }
+    } catch (e) {
+      console.log('Failed to parse MCP servers JSON');
     }
   }
 
@@ -181,8 +189,7 @@ Pebble.addEventListener('showConfiguration', function () {
   var model = localStorage.getItem('model') || '';
   var systemMessage = localStorage.getItem('system_message') || '';
   var webSearchEnabled = localStorage.getItem('web_search_enabled') || 'false';
-  var mcpUrl = localStorage.getItem('mcp_url') || '';
-  var mcpHeaders = localStorage.getItem('mcp_headers') || '';
+  var mcpServers = localStorage.getItem('mcp_servers') || '';
 
   // Build configuration URL
   var url = 'https://breitburg.github.io/claude-for-pebble/config/';
@@ -191,8 +198,7 @@ Pebble.addEventListener('showConfiguration', function () {
   url += '&model=' + encodeURIComponent(model);
   url += '&system_message=' + encodeURIComponent(systemMessage);
   url += '&web_search_enabled=' + encodeURIComponent(webSearchEnabled);
-  url += '&mcp_url=' + encodeURIComponent(mcpUrl);
-  url += '&mcp_headers=' + encodeURIComponent(mcpHeaders);
+  url += '&mcp_servers=' + encodeURIComponent(mcpServers);
 
   console.log('Opening configuration page: ' + url);
   Pebble.openURL(url);
@@ -205,7 +211,7 @@ Pebble.addEventListener('webviewclosed', function (e) {
     console.log('Settings received: ' + JSON.stringify(settings));
 
     // Save or clear settings in local storage
-    var keys = ['api_key', 'base_url', 'model', 'system_message', 'web_search_enabled', 'mcp_url', 'mcp_headers'];
+    var keys = ['api_key', 'base_url', 'model', 'system_message', 'web_search_enabled', 'mcp_servers'];
     keys.forEach(function(key) {
       if (settings[key] && settings[key].trim() !== '') {
         localStorage.setItem(key, settings[key]);
