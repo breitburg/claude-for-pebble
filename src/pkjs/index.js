@@ -127,9 +127,14 @@ function streamClaudeResponse(messages) {
     if (mcpHeaders && mcpHeaders.trim().length > 0) {
       try {
         var headers = JSON.parse(mcpHeaders);
-        requestBody.mcp_connector.headers = headers;
+        // Validate that headers is an object
+        if (headers && typeof headers === 'object' && !Array.isArray(headers)) {
+          requestBody.mcp_connector.headers = headers;
+        } else {
+          console.log('MCP headers must be a valid JSON object');
+        }
       } catch (e) {
-        console.log('Error parsing MCP headers JSON: ' + e);
+        console.log('Failed to parse MCP headers JSON');
       }
     }
   }
