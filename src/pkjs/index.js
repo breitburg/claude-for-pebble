@@ -31,6 +31,8 @@ function streamClaudeResponse(messages) {
 
   if (!apiKey) {
     console.log('No API key configured');
+    // Send error as a chunk, then end
+    Pebble.sendAppMessage({ 'RESPONSE_CHUNK': 'No API key configured. Please configure in settings.' });
     Pebble.sendAppMessage({ 'RESPONSE_END': 1 });
     return;
   }
@@ -42,6 +44,7 @@ function streamClaudeResponse(messages) {
   xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.setRequestHeader('x-api-key', apiKey);
   xhr.setRequestHeader('anthropic-version', '2023-06-01');
+  xhr.timeout = 5000;
 
   var responseText = '';
 
@@ -83,6 +86,8 @@ function streamClaudeResponse(messages) {
       if (xhr.readyState === 4) {
         if (xhr.status !== 200) {
           console.log('API error: ' + xhr.status + ' - ' + xhr.responseText);
+          // Send error as a chunk, then end
+          Pebble.sendAppMessage({ 'RESPONSE_CHUNK': 'Error ' + xhr.status + ': ' + xhr.responseText });
         }
         Pebble.sendAppMessage({ 'RESPONSE_END': 1 });
       }
@@ -91,6 +96,15 @@ function streamClaudeResponse(messages) {
 
   xhr.onerror = function () {
     console.log('Network error');
+    // Send error as a chunk, then end
+    Pebble.sendAppMessage({ 'RESPONSE_CHUNK': 'Network error occurred' });
+    Pebble.sendAppMessage({ 'RESPONSE_END': 1 });
+  };
+
+  xhr.ontimeout = function () {
+    console.log('Request timeout');
+    // Send error as a chunk, then end
+    Pebble.sendAppMessage({ 'RESPONSE_CHUNK': 'Request timed out. Likely problems on Anthropic\'s side.' });
     Pebble.sendAppMessage({ 'RESPONSE_END': 1 });
   };
 
@@ -178,7 +192,7 @@ Pebble.addEventListener('webviewclosed', function (e) {
 
     // Save or clear settings in local storage
     var keys = ['api_key', 'base_url', 'model', 'system_message', 'web_search_enabled'];
-    keys.forEach(function(key) {
+    keys.forEach(function (key) {
       if (settings[key] && settings[key].trim() !== '') {
         localStorage.setItem(key, settings[key]);
         console.log(key + ' saved');
