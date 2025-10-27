@@ -285,7 +285,6 @@ static void append_to_last_message(const char *text) {
 
     // Rebuild to recalculate layout
     rebuild_scroll_content();
-    scroll_to_bottom();
   }
 }
 
@@ -503,8 +502,6 @@ void chat_window_handle_inbox(DictionaryIterator *iterator) {
 
     // Update action bar to show mic again
     update_action_bar();
-
-    scroll_to_bottom();
   }
 }
 
