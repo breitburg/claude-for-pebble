@@ -46,6 +46,17 @@
       <td><label for="web-search">Enable Web Search</label></td>
       <td><input type="checkbox" id="web-search"></td>
     </tr>
+    <tr class="advanced-field">
+      <td colspan="2"><h3>Remote MCP Servers</h3></td>
+    </tr>
+    <tr class="advanced-field">
+      <td><label for="mcp-url">MCP Server URL</label></td>
+      <td><input type="text" id="mcp-url" placeholder="https://your-mcp-server.com/mcp"></td>
+    </tr>
+    <tr class="advanced-field">
+      <td><label for="mcp-headers">MCP Headers (JSON)</label></td>
+      <td><textarea id="mcp-headers" rows="3" placeholder='{"Authorization": "Bearer your-token"}'></textarea></td>
+    </tr>
   </table>
 
   <button id="save-button">Save</button>
