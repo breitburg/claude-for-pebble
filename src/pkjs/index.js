@@ -86,8 +86,20 @@ function streamClaudeResponse(messages) {
       if (xhr.readyState === 4) {
         if (xhr.status !== 200) {
           console.log('API error: ' + xhr.status + ' - ' + xhr.responseText);
+          // Parse error response and extract message
+          var errorMessage = xhr.responseText;
+          
+          try {
+            var errorData = JSON.parse(xhr.responseText);
+            if (errorData.error && errorData.error.message) {
+              errorMessage = errorData.error.message;
+            }
+          } catch (e) {
+            console.log('Failed to parse error response: ' + e);
+          }
+
           // Send error as a chunk, then end
-          Pebble.sendAppMessage({ 'RESPONSE_CHUNK': 'Error ' + xhr.status + ': ' + xhr.responseText });
+          Pebble.sendAppMessage({ 'RESPONSE_CHUNK': 'Error ' + xhr.status + ': ' + errorMessage });
         }
         Pebble.sendAppMessage({ 'RESPONSE_END': 1 });
       }
