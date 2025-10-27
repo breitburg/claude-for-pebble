@@ -164,10 +164,6 @@ Pebble.addEventListener('webviewclosed', function(e) {
     return;
   }
 
-  // Get the keys and values from Clay
-  var dict = clay.getItemsDict();
-  var settings = JSON.parse(e.response);
-
   // Clay handles saving to localStorage automatically
   // Just need to send updated ready status to watch
   console.log('Configuration closed, settings saved');
