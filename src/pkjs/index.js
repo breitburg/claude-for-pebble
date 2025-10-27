@@ -127,12 +127,18 @@ function streamClaudeResponse(messages) {
         for (var i = 0; i < servers.length; i++) {
           var server = servers[i];
           if (server && typeof server === 'object' && server.url && typeof server.url === 'string') {
-            var validServer = { url: server.url.trim() };
-            // Add headers if they exist and are valid
-            if (server.headers && typeof server.headers === 'object' && !Array.isArray(server.headers)) {
-              validServer.headers = server.headers;
+            var url = server.url.trim();
+            // Basic URL validation - must start with http:// or https://
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+              var validServer = { url: url };
+              // Add headers if they exist and are valid
+              if (server.headers && typeof server.headers === 'object' && !Array.isArray(server.headers)) {
+                validServer.headers = server.headers;
+              }
+              validServers.push(validServer);
+            } else {
+              console.log('MCP server URL must start with http:// or https://');
             }
-            validServers.push(validServer);
           }
         }
         
