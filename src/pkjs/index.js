@@ -29,11 +29,19 @@ function parseConversation(encoded) {
 
 // Stream response from Claude API
 function streamClaudeResponse(messages) {
-  var apiKey = localStorage.getItem('api_key');
-  var baseUrl = localStorage.getItem('base_url') || 'https://api.anthropic.com/v1/messages';
-  var model = localStorage.getItem('model') || 'claude-haiku-4-5';
-  var systemMessage = localStorage.getItem('system_message') || "You're running on a Pebble smartwatch. Please respond in plain text without any formatting, keeping your responses within 1-3 sentences.";
-  var webSearchEnabled = localStorage.getItem('web_search_enabled') === 'true';
+  // Read settings from Clay's storage
+  var claySettings = {};
+  try {
+    claySettings = JSON.parse(localStorage.getItem('clay-settings')) || {};
+  } catch (e) {
+    console.error('Error reading clay-settings:', e);
+  }
+
+  var apiKey = claySettings.api_key;
+  var baseUrl = claySettings.base_url || 'https://api.anthropic.com/v1/messages';
+  var model = claySettings.model || 'claude-haiku-4-5';
+  var systemMessage = claySettings.system_message || "You're running on a Pebble smartwatch. Please respond in plain text without any formatting, keeping your responses within 1-3 sentences.";
+  var webSearchEnabled = claySettings.web_search_enabled === true;
 
   if (!apiKey) {
     console.log('No API key configured');
@@ -127,7 +135,15 @@ function streamClaudeResponse(messages) {
 
 // Send ready status to watch
 function sendReadyStatus() {
-  var apiKey = localStorage.getItem('api_key');
+  // Read settings from Clay's storage
+  var claySettings = {};
+  try {
+    claySettings = JSON.parse(localStorage.getItem('clay-settings')) || {};
+  } catch (e) {
+    console.error('Error reading clay-settings:', e);
+  }
+
+  var apiKey = claySettings.api_key;
   var isReady = apiKey && apiKey.trim().length > 0 ? 1 : 0;
 
   console.log('Sending READY_STATUS: ' + isReady);
@@ -156,33 +172,11 @@ Pebble.addEventListener('appmessage', function (e) {
 });
 
 // Clay automatically handles 'showConfiguration' and 'webviewclosed' events
-// We need to also save settings to individual localStorage keys for backward compatibility
+// Configuration is saved to localStorage under 'clay-settings' as a JSON object
+// We need to notify the watch when settings are updated
 Pebble.addEventListener('webviewclosed', function(e) {
   if (e && e.response) {
-    // Get the settings that Clay has already parsed and saved
-    var claySettings = clay.getSettings(e.response, true);
-    
-    // Also save to individual localStorage keys for backward compatibility
-    var keys = ['api_key', 'base_url', 'model', 'system_message', 'web_search_enabled'];
-    keys.forEach(function(key) {
-      if (claySettings[key] !== undefined && claySettings[key] !== null) {
-        var value = claySettings[key];
-        // Convert objects with 'value' property (from Clay) to plain values
-        if (typeof value === 'object' && value.value !== undefined) {
-          value = value.value;
-        }
-        // Convert boolean to string for web_search_enabled
-        if (typeof value === 'boolean') {
-          value = value.toString();
-        }
-        if (value !== '' && value !== null) {
-          localStorage.setItem(key, value);
-          console.log(key + ' saved: ' + value);
-        }
-      }
-    });
-    
-    // Send updated ready status to watch
+    // Clay has already saved the settings, just notify the watch
     sendReadyStatus();
   }
 });
