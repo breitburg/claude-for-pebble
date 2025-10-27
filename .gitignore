@@ -1,2 +1,3 @@
 .DS_Store
 build/
+_codeql_detected_source_root
