@@ -72,6 +72,12 @@
     ]
   },
   {
+    "type": "button",
+    "id": "reset-button",
+    "defaultValue": "Reset to Defaults",
+    "primary": false
+  },
+  {
     "type": "submit",
     "defaultValue": "Save Settings"
   }

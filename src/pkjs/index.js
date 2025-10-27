@@ -1,7 +1,8 @@
 // Initialize Clay for configuration
 var Clay = require('pebble-clay');
 var clayConfig = require('./config.json');
-var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
+var customClay = require('./custom-clay');
+var clay = new Clay(clayConfig, customClay);
 
 // Parse encoded conversation string "[U]msg1[A]msg2..." into messages array
 function parseConversation(encoded) {
@@ -154,18 +155,34 @@ Pebble.addEventListener('appmessage', function (e) {
   }
 });
 
-// Handle configuration with Clay
-Pebble.addEventListener('showConfiguration', function(e) {
-  Pebble.openURL(clay.generateUrl());
-});
-
+// Clay automatically handles 'showConfiguration' and 'webviewclosed' events
+// We need to also save settings to individual localStorage keys for backward compatibility
 Pebble.addEventListener('webviewclosed', function(e) {
-  if (e && !e.response) {
-    return;
+  if (e && e.response) {
+    // Get the settings that Clay has already parsed and saved
+    var claySettings = clay.getSettings(e.response, true);
+    
+    // Also save to individual localStorage keys for backward compatibility
+    var keys = ['api_key', 'base_url', 'model', 'system_message', 'web_search_enabled'];
+    keys.forEach(function(key) {
+      if (claySettings[key] !== undefined && claySettings[key] !== null) {
+        var value = claySettings[key];
+        // Convert objects with 'value' property (from Clay) to plain values
+        if (typeof value === 'object' && value.value !== undefined) {
+          value = value.value;
+        }
+        // Convert boolean to string for web_search_enabled
+        if (typeof value === 'boolean') {
+          value = value.toString();
+        }
+        if (value !== '' && value !== null) {
+          localStorage.setItem(key, value);
+          console.log(key + ' saved: ' + value);
+        }
+      }
+    });
+    
+    // Send updated ready status to watch
+    sendReadyStatus();
   }
-
-  // Clay handles saving to localStorage automatically
-  // Just need to send updated ready status to watch
-  console.log('Configuration closed, settings saved');
-  sendReadyStatus();
 });
