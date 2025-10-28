@@ -15,6 +15,7 @@ typedef struct {
 
 // Global state for the chat window
 static Window *s_window;
+static StatusBarLayer *s_status_bar;
 static ScrollLayer *s_scroll_layer;
 static Layer *s_content_layer;
 static ActionBarLayer *s_action_bar;
@@ -63,15 +64,25 @@ static void window_load(Window *window) {
   action_bar_layer_add_to_window(s_action_bar, window);
   action_bar_layer_set_click_config_provider(s_action_bar, click_config_provider);
 
+  // Create status bar (adjusted to not overlap action bar)
+  s_status_bar = status_bar_layer_create();
+  status_bar_layer_set_colors(s_status_bar, GColorWhite, GColorBlack);
+  Layer *status_bar_layer = status_bar_layer_get_layer(s_status_bar);
+  GRect status_bar_frame = layer_get_frame(status_bar_layer);
+  status_bar_frame.size.w = bounds.size.w - ACTION_BAR_WIDTH;
+  layer_set_frame(status_bar_layer, status_bar_frame);
+  layer_add_child(window_layer, status_bar_layer);
+
   s_action_icon_dictation = gbitmap_create_with_resource(RESOURCE_ID_ACTION_ICON_DICTATION);
   s_action_icon_up = gbitmap_create_with_resource(RESOURCE_ID_ACTION_ICON_UP);
   s_action_icon_down = gbitmap_create_with_resource(RESOURCE_ID_ACTION_ICON_DOWN);
 
   // Calculate content area
   s_content_width = bounds.size.w - ACTION_BAR_WIDTH;
+  int status_bar_height = STATUS_BAR_LAYER_HEIGHT;
 
-  // Create scroll layer
-  s_scroll_layer = scroll_layer_create(GRect(0, 0, s_content_width, bounds.size.h));
+  // Create scroll layer (below status bar)
+  s_scroll_layer = scroll_layer_create(GRect(0, status_bar_height, s_content_width, bounds.size.h - status_bar_height));
   scroll_layer_set_shadow_hidden(s_scroll_layer, true);
   layer_add_child(window_layer, scroll_layer_get_layer(s_scroll_layer));
 
@@ -88,8 +99,9 @@ static void window_load(Window *window) {
   int gap = 10;  // Gap between spark and text
   int total_content_height = spark_size + gap + text_height;
 
-  // Calculate starting Y position to center the entire content
-  int start_y = (bounds.size.h - total_content_height) / 2;
+  // Calculate starting Y position to center the entire content (accounting for status bar)
+  int available_height = bounds.size.h - status_bar_height;
+  int start_y = status_bar_height + (available_height - total_content_height) / 2;
 
   // Create and position spark
   s_empty_spark = claude_spark_layer_create(
@@ -450,6 +462,10 @@ static void window_unload(Window *window) {
 
   if (s_action_bar) {
     action_bar_layer_destroy(s_action_bar);
+  }
+
+  if (s_status_bar) {
+    status_bar_layer_destroy(s_status_bar);
   }
 }
 
