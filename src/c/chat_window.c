@@ -52,7 +52,6 @@ static void click_config_provider(void *context);
 static void send_chat_request(void);
 static void shift_messages(void);
 static void add_assistant_message(const char *text);
-static void append_to_last_message(const char *text);
 static void scroll_to_bottom(void);
 
 static void window_load(Window *window) {
@@ -271,29 +270,6 @@ static void add_assistant_message(const char *text) {
   rebuild_scroll_content();
 }
 
-static void append_to_last_message(const char *text) {
-  if (s_message_count == 0) {
-    return;
-  }
-
-  // Append to last message
-  int last_idx = s_message_count - 1;
-  size_t current_len = strlen(s_messages[last_idx].text);
-  size_t available = sizeof(s_messages[last_idx].text) - current_len - 1;
-
-  if (available > 0) {
-    strncat(s_messages[last_idx].text, text, available);
-  }
-
-  // Update the last bubble with new text
-  if (s_bubble_count > 0) {
-    message_bubble_set_text(s_bubbles[s_bubble_count - 1], s_messages[last_idx].text);
-
-    // Rebuild to recalculate layout
-    rebuild_scroll_content();
-  }
-}
-
 static void scroll_to_bottom(void) {
   GRect content_bounds = layer_get_bounds(s_content_layer);
   GRect scroll_bounds = layer_get_bounds(scroll_layer_get_layer(s_scroll_layer));
@@ -479,25 +455,16 @@ static void window_unload(Window *window) {
 
 void chat_window_handle_inbox(DictionaryIterator *iterator) {
   // Handle incoming messages from JS
-  Tuple *response_chunk_tuple = dict_find(iterator, MESSAGE_KEY_RESPONSE_CHUNK);
+  Tuple *response_text_tuple = dict_find(iterator, MESSAGE_KEY_RESPONSE_TEXT);
   Tuple *response_end_tuple = dict_find(iterator, MESSAGE_KEY_RESPONSE_END);
 
-  if (response_chunk_tuple) {
-    // Received a chunk of text
-    const char *chunk = response_chunk_tuple->value->cstring;
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Received RESPONSE_CHUNK: %s", chunk);
+  if (response_text_tuple) {
+    // Received complete response text
+    const char *text = response_text_tuple->value->cstring;
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Received RESPONSE_TEXT: %s", text);
 
-    // Check if last message is an assistant message
-    bool need_new_message = (s_message_count == 0) || s_messages[s_message_count - 1].is_user;
-
-    if (need_new_message) {
-      // Create new assistant message with this chunk
-      add_assistant_message(chunk);
-      scroll_to_bottom();
-    } else {
-      // Append to existing assistant message
-      append_to_last_message(chunk);
-    }
+    // Add as new assistant message
+    add_assistant_message(text);
   }
 
   if (response_end_tuple) {

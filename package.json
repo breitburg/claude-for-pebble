@@ -1,7 +1,7 @@
 {
   "name": "claude",
   "author": "Ilia Breitburg",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "keywords": [
     "pebble-app"
   ],
@@ -25,7 +25,7 @@
     ],
     "messageKeys": [
       "REQUEST_CHAT",
-      "RESPONSE_CHUNK",
+      "RESPONSE_TEXT",
       "RESPONSE_END",
       "READY_STATUS"
     ],

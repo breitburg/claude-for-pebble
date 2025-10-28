@@ -21,8 +21,8 @@ function parseConversation(encoded) {
   return messages;
 }
 
-// Stream response from Claude API
-function streamClaudeResponse(messages) {
+// Get response from Claude API
+function getClaudeResponse(messages) {
   var apiKey = localStorage.getItem('api_key');
   var baseUrl = localStorage.getItem('base_url') || 'https://api.anthropic.com/v1/messages';
   var model = localStorage.getItem('model') || 'claude-haiku-4-5';
@@ -31,8 +31,8 @@ function streamClaudeResponse(messages) {
 
   if (!apiKey) {
     console.log('No API key configured');
-    // Send error as a chunk, then end
-    Pebble.sendAppMessage({ 'RESPONSE_CHUNK': 'No API key configured. Please configure in settings.' });
+    // Send error, then end
+    Pebble.sendAppMessage({ 'RESPONSE_TEXT': 'No API key configured. Please configure in settings.' });
     Pebble.sendAppMessage({ 'RESPONSE_END': 1 });
     return;
   }
@@ -46,85 +46,79 @@ function streamClaudeResponse(messages) {
   xhr.setRequestHeader('anthropic-version', '2023-06-01');
   xhr.timeout = 5000;
 
-  var responseText = '';
+  xhr.onload = function () {
+    if (xhr.status === 200) {
+      try {
+        var data = JSON.parse(xhr.responseText);
 
-  xhr.onreadystatechange = function () {
-    if (xhr.readyState === 3 || xhr.readyState === 4) {
-      // Process new data
-      var newData = xhr.responseText.substring(responseText.length);
-      responseText = xhr.responseText;
+        // Extract all text blocks from content array
+        if (data.content && data.content.length > 0) {
+          var responseText = '';
 
-      // Parse SSE format
-      var lines = newData.split('\n');
-      for (var i = 0; i < lines.length; i++) {
-        var line = lines[i].trim();
-        if (line.startsWith('data:')) {
-          var jsonStr = line.substring(5).trim();
-          if (jsonStr === '[DONE]') continue;
-
-          try {
-            var data = JSON.parse(jsonStr);
-
-            // Handle content_block_delta events
-            if (data.type === 'content_block_delta' && data.delta && data.delta.text) {
-              console.log('Sending chunk: ' + data.delta.text);
-              Pebble.sendAppMessage({ 'RESPONSE_CHUNK': data.delta.text });
+          for (var i = 0; i < data.content.length; i++) {
+            var block = data.content[i];
+            if (block.type === 'text' && block.text) {
+              responseText += block.text;
+            } else if (block.type === 'server_tool_use') {
+              responseText += '\n\n';
             }
-
-            // Handle message_stop event
-            if (data.type === 'message_stop') {
-              console.log('Stream complete');
-              Pebble.sendAppMessage({ 'RESPONSE_END': 1 });
-            }
-          } catch (e) {
-            console.log('Error parsing JSON: ' + e);
-          }
-        }
-      }
-
-      // If request complete, send RESPONSE_END
-      if (xhr.readyState === 4) {
-        if (xhr.status !== 200) {
-          console.log('API error: ' + xhr.status + ' - ' + xhr.responseText);
-          // Parse error response and extract message
-          var errorMessage = xhr.responseText;
-          
-          try {
-            var errorData = JSON.parse(xhr.responseText);
-            if (errorData.error && errorData.error.message) {
-              errorMessage = errorData.error.message;
-            }
-          } catch (e) {
-            console.log('Failed to parse error response: ' + e);
           }
 
-          // Send error as a chunk, then end
-          Pebble.sendAppMessage({ 'RESPONSE_CHUNK': 'Error ' + xhr.status + ': ' + errorMessage });
+          responseText = responseText.trim();
+
+          if (responseText.length > 0) {
+            console.log('Sending response: ' + responseText);
+            Pebble.sendAppMessage({ 'RESPONSE_TEXT': responseText });
+          } else {
+            console.log('No text blocks in response');
+            Pebble.sendAppMessage({ 'RESPONSE_TEXT': 'No response from Claude' });
+          }
+        } else {
+          console.log('No content in response');
+          Pebble.sendAppMessage({ 'RESPONSE_TEXT': 'No response from Claude' });
         }
-        Pebble.sendAppMessage({ 'RESPONSE_END': 1 });
+      } catch (e) {
+        console.log('Error parsing response: ' + e);
+        Pebble.sendAppMessage({ 'RESPONSE_TEXT': 'Error parsing response' });
       }
+    } else {
+      console.log('API error: ' + xhr.status + ' - ' + xhr.responseText);
+      // Parse error response and extract message
+      var errorMessage = xhr.responseText;
+
+      try {
+        var errorData = JSON.parse(xhr.responseText);
+        if (errorData.error && errorData.error.message) {
+          errorMessage = errorData.error.message;
+        }
+      } catch (e) {
+        console.log('Failed to parse error response: ' + e);
+      }
+
+      // Send error
+      Pebble.sendAppMessage({ 'RESPONSE_TEXT': 'Error ' + xhr.status + ': ' + errorMessage });
     }
+
+    // Always send end signal
+    Pebble.sendAppMessage({ 'RESPONSE_END': 1 });
   };
 
   xhr.onerror = function () {
     console.log('Network error');
-    // Send error as a chunk, then end
-    Pebble.sendAppMessage({ 'RESPONSE_CHUNK': 'Network error occurred' });
+    Pebble.sendAppMessage({ 'RESPONSE_TEXT': 'Network error occurred' });
     Pebble.sendAppMessage({ 'RESPONSE_END': 1 });
   };
 
   xhr.ontimeout = function () {
     console.log('Request timeout');
-    // Send error as a chunk, then end
-    Pebble.sendAppMessage({ 'RESPONSE_CHUNK': 'Request timed out. Likely problems on Anthropic\'s side.' });
+    Pebble.sendAppMessage({ 'RESPONSE_TEXT': 'Request timed out. Likely problems on Anthropic\'s side.' });
     Pebble.sendAppMessage({ 'RESPONSE_END': 1 });
   };
 
   var requestBody = {
     model: model,
     max_tokens: 256,
-    messages: messages,
-    stream: true
+    messages: messages
   };
 
   // Add system message if provided
@@ -171,7 +165,7 @@ Pebble.addEventListener('appmessage', function (e) {
     var messages = parseConversation(encoded);
     console.log('Parsed ' + messages.length + ' messages');
 
-    streamClaudeResponse(messages);
+    getClaudeResponse(messages);
   }
 });
 
