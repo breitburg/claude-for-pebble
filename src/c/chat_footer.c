@@ -31,15 +31,15 @@ ChatFooter* chat_footer_create(int width) {
     GTextAlignmentLeft
   );
 
-  // Calculate footer height dynamically
+  // Calculate footer height dynamically (no top padding)
   int content_height = text_size.h > SPARK_SIZE ? text_size.h : SPARK_SIZE;
-  footer->height = PADDING + content_height + PADDING;
+  footer->height = content_height + PADDING;
 
   // Create container layer
   footer->layer = layer_create(GRect(0, 0, width, footer->height));
 
-  // Create small Claude spark on the left (vertically centered)
-  int spark_y = (footer->height - SPARK_SIZE) / 2;
+  // Create small Claude spark on the left (vertically centered in content area)
+  int spark_y = (content_height - SPARK_SIZE) / 2;
   footer->spark = claude_spark_layer_create(
     GRect(PADDING, spark_y, SPARK_SIZE, SPARK_SIZE),
     CLAUDE_SPARK_SMALL
@@ -47,8 +47,8 @@ ChatFooter* chat_footer_create(int width) {
   claude_spark_set_frame(footer->spark, 3);  // Static on frame 4
   layer_add_child(footer->layer, claude_spark_get_layer(footer->spark));
 
-  // Create disclaimer text on the right (vertically centered)
-  int text_y = (footer->height - text_size.h) / 2;
+  // Create disclaimer text on the right (vertically centered in content area)
+  int text_y = (content_height - text_size.h) / 2;
   footer->text_layer = text_layer_create(GRect(text_x, text_y, text_width, text_size.h));
   text_layer_set_text(footer->text_layer, CHAT_FOOTER_DISCLAIMER_TEXT);
   text_layer_set_font(footer->text_layer, fonts_get_system_font(TEXT_FONT));

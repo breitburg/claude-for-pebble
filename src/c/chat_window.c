@@ -178,6 +178,12 @@ static void rebuild_scroll_content(void) {
   }
 
   // Add footer at the end
+  // Add top padding only if last message is from user
+  bool last_is_user = (s_message_count > 0) && s_messages[s_message_count - 1].is_user;
+  if (last_is_user) {
+    y_offset += 10;  // Add padding before footer
+  }
+
   int footer_height = chat_footer_get_height(s_footer);
   Layer *footer_layer = chat_footer_get_layer(s_footer);
   GRect footer_frame = layer_get_frame(footer_layer);
