@@ -1,7 +1,7 @@
 {
-  "name": "claude",
+  "name": "inference",
   "author": "Ilia Breitburg",
-  "version": "1.7.0",
+  "version": "1.9.0",
   "keywords": [
     "pebble-app"
   ],
