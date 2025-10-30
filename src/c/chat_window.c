@@ -18,10 +18,7 @@ static Window *s_window;
 static StatusBarLayer *s_status_bar;
 static ScrollLayer *s_scroll_layer;
 static Layer *s_content_layer;
-static ActionBarLayer *s_action_bar;
-static GBitmap *s_action_icon_dictation;
-static GBitmap *s_action_icon_up;
-static GBitmap *s_action_icon_down;
+static Layer *s_action_button_layer;
 static ChatFooter *s_footer;
 static DictationSession *s_dictation_session;
 
@@ -40,7 +37,6 @@ static bool s_waiting_for_response = false;
 
 // Forward declarations
 static void rebuild_scroll_content(void);
-static void update_action_bar(void);
 static void dictation_session_callback(DictationSession *session, DictationSessionStatus status, char *transcription, void *context);
 static void up_click_handler(ClickRecognizerRef recognizer, void *context);
 static void down_click_handler(ClickRecognizerRef recognizer, void *context);
@@ -49,31 +45,22 @@ static void send_chat_request(void);
 static void shift_messages(void);
 static void add_assistant_message(const char *text);
 static void scroll_to_bottom(void);
+static void action_button_update_proc(Layer *layer, GContext *ctx);
 
 static void window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
 
-  // Create action bar first
-  s_action_bar = action_bar_layer_create();
-  action_bar_layer_add_to_window(s_action_bar, window);
-  action_bar_layer_set_click_config_provider(s_action_bar, click_config_provider);
+  // Set click config provider on window
+  window_set_click_config_provider(window, click_config_provider);
 
-  // Create status bar (adjusted to not overlap action bar)
+  // Create status bar
   s_status_bar = status_bar_layer_create();
   status_bar_layer_set_colors(s_status_bar, GColorWhite, GColorBlack);
-  Layer *status_bar_layer = status_bar_layer_get_layer(s_status_bar);
-  GRect status_bar_frame = layer_get_frame(status_bar_layer);
-  status_bar_frame.size.w = bounds.size.w - ACTION_BAR_WIDTH;
-  layer_set_frame(status_bar_layer, status_bar_frame);
-  layer_add_child(window_layer, status_bar_layer);
-
-  s_action_icon_dictation = gbitmap_create_with_resource(RESOURCE_ID_ACTION_ICON_DICTATION);
-  s_action_icon_up = gbitmap_create_with_resource(RESOURCE_ID_ACTION_ICON_UP);
-  s_action_icon_down = gbitmap_create_with_resource(RESOURCE_ID_ACTION_ICON_DOWN);
+  layer_add_child(window_layer, status_bar_layer_get_layer(s_status_bar));
 
   // Calculate content area
-  s_content_width = bounds.size.w - ACTION_BAR_WIDTH;
+  s_content_width = bounds.size.w;
   int status_bar_height = STATUS_BAR_LAYER_HEIGHT;
 
   // Create scroll layer (below status bar)
@@ -87,6 +74,11 @@ static void window_load(Window *window) {
 
   // Create footer
   s_footer = chat_footer_create(s_content_width);
+
+  // Create action button layer (spans entire window)
+  s_action_button_layer = layer_create(bounds);
+  layer_set_update_proc(s_action_button_layer, action_button_update_proc);
+  layer_add_child(window_layer, s_action_button_layer);
 
   // Build the UI from message data
   rebuild_scroll_content();
@@ -170,27 +162,6 @@ static void rebuild_scroll_content(void) {
 
   // Restore previous scroll position (prevents jumping during rebuilds)
   scroll_layer_set_content_offset(s_scroll_layer, saved_offset, false);
-
-  // Update action bar for chat state
-  update_action_bar();
-}
-
-static void update_action_bar(void) {
-  // Clear all icons first
-  action_bar_layer_clear_icon(s_action_bar, BUTTON_ID_SELECT);
-  action_bar_layer_clear_icon(s_action_bar, BUTTON_ID_UP);
-  action_bar_layer_clear_icon(s_action_bar, BUTTON_ID_DOWN);
-
-  // Show up/down arrows only if there are messages
-  if (s_message_count > 0) {
-    action_bar_layer_set_icon(s_action_bar, BUTTON_ID_UP, s_action_icon_up);
-    action_bar_layer_set_icon(s_action_bar, BUTTON_ID_DOWN, s_action_icon_down);
-  }
-
-  // Show mic icon only if not waiting for response
-  if (!s_waiting_for_response) {
-    action_bar_layer_set_icon(s_action_bar, BUTTON_ID_SELECT, s_action_icon_dictation);
-  }
 }
 
 static void shift_messages(void) {
@@ -280,9 +251,6 @@ static void send_chat_request(void) {
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Sent REQUEST_CHAT: %d bytes", (int)strlen(encoded_buffer));
       s_waiting_for_response = true;
       chat_window_set_footer_animating(true);
-
-      // Update action bar to hide mic while waiting
-      update_action_bar();
     } else {
       APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to send REQUEST_CHAT: %d", (int)result);
     }
@@ -340,6 +308,30 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
   }
 }
 
+// TODO: Switch to the official action button API once it appears in the SDK
+// This is a temporary implementation based on the Pebble firmware source
+static void action_button_update_proc(Layer *layer, GContext *ctx) {
+  const GRect bounds = layer_get_bounds(layer);
+
+  // Button radius (13 for rectangular displays, 12 for round)
+  const int radius = PBL_IF_ROUND_ELSE(12, 13);
+
+  // Create button rect and align it to the right side
+  GRect button_rect = GRect(0, 0, radius * 2, radius * 2);
+  grect_align(&button_rect, &bounds, GAlignRight, false);
+
+  // Offset the button halfway off-screen
+  button_rect.origin.x += radius;
+
+  // Further offset on a per-content-size basis
+  // Note: Using default medium content size offsets
+  button_rect.origin.x += PBL_IF_ROUND_ELSE(1, 8);
+
+  // Draw filled circle
+  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_fill_radial(ctx, button_rect, GOvalScaleModeFitCircle, radius, 0, TRIG_MAX_ANGLE);
+}
+
 static void click_config_provider(void *context) {
   window_single_repeating_click_subscribe(BUTTON_ID_UP, 100, up_click_handler);
   window_single_repeating_click_subscribe(BUTTON_ID_DOWN, 100, down_click_handler);
@@ -380,20 +372,8 @@ static void window_unload(Window *window) {
     scroll_layer_destroy(s_scroll_layer);
   }
 
-  if (s_action_icon_dictation) {
-    gbitmap_destroy(s_action_icon_dictation);
-  }
-
-  if (s_action_icon_up) {
-    gbitmap_destroy(s_action_icon_up);
-  }
-
-  if (s_action_icon_down) {
-    gbitmap_destroy(s_action_icon_down);
-  }
-
-  if (s_action_bar) {
-    action_bar_layer_destroy(s_action_bar);
+  if (s_action_button_layer) {
+    layer_destroy(s_action_button_layer);
   }
 
   if (s_status_bar) {
@@ -420,9 +400,6 @@ void chat_window_handle_inbox(DictionaryIterator *iterator) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Received RESPONSE_END");
     s_waiting_for_response = false;
     chat_window_set_footer_animating(false);
-
-    // Update action bar to show mic again
-    update_action_bar();
   }
 }
 

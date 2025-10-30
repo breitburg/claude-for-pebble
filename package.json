@@ -1,7 +1,7 @@
 {
   "name": "inference",
   "author": "Ilia Breitburg",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "keywords": [
     "pebble-app"
   ],
@@ -51,16 +51,6 @@
           "type": "png",
           "name": "ACTION_ICON_DICTATION",
           "file": "action_bar_icons/dictation.png"
-        },
-        {
-          "type": "png",
-          "name": "ACTION_ICON_UP",
-          "file": "action_bar_icons/up.png"
-        },
-        {
-          "type": "png",
-          "name": "ACTION_ICON_DOWN",
-          "file": "action_bar_icons/down.png"
         }
       ]
     }
