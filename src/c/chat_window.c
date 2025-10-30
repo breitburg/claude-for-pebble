@@ -25,10 +25,6 @@ static GBitmap *s_action_icon_down;
 static ChatFooter *s_footer;
 static DictationSession *s_dictation_session;
 
-// Empty state UI (shown when no messages)
-static ClaudeSparkLayer *s_empty_spark;
-static TextLayer *s_empty_text_layer;
-
 // Message storage (designed for dynamic updates)
 static Message s_messages[MAX_MESSAGES];
 static int s_message_count = 0;
@@ -48,7 +44,6 @@ static void update_action_bar(void);
 static void dictation_session_callback(DictationSession *session, DictationSessionStatus status, char *transcription, void *context);
 static void up_click_handler(ClickRecognizerRef recognizer, void *context);
 static void down_click_handler(ClickRecognizerRef recognizer, void *context);
-static void back_click_handler(ClickRecognizerRef recognizer, void *context);
 static void click_config_provider(void *context);
 static void send_chat_request(void);
 static void shift_messages(void);
@@ -93,43 +88,11 @@ static void window_load(Window *window) {
   // Create footer
   s_footer = chat_footer_create(s_content_width);
 
-  // Create empty state UI (spark + text) - dynamically centered
-  int spark_size = 60;
-  int text_height = 50;  // Approximate height for 2 lines of GOTHIC_24_BOLD
-  int gap = 10;  // Gap between spark and text
-  int total_content_height = spark_size + gap + text_height;
-
-  // Calculate starting Y position to center the entire content (accounting for status bar)
-  int available_height = bounds.size.h - status_bar_height;
-  int start_y = status_bar_height + (available_height - total_content_height) / 2;
-
-  // Create and position spark
-  s_empty_spark = claude_spark_layer_create(
-    GRect((s_content_width - spark_size) / 2, start_y, spark_size, spark_size),
-    CLAUDE_SPARK_LARGE
-  );
-  layer_add_child(window_layer, claude_spark_get_layer(s_empty_spark));
-  claude_spark_set_frame(s_empty_spark, 4);
-
-  // Create and position text below spark
-  int text_margin = 10;
-  int text_y = start_y + spark_size + gap;
-  s_empty_text_layer = text_layer_create(
-    GRect(text_margin, text_y, s_content_width - text_margin * 2, text_height)
-  );
-  text_layer_set_text(s_empty_text_layer, "How can\nI help you?");
-  text_layer_set_font(s_empty_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-  text_layer_set_text_alignment(s_empty_text_layer, GTextAlignmentCenter);
-  text_layer_set_background_color(s_empty_text_layer, GColorClear);
-  text_layer_set_text_color(s_empty_text_layer, GColorBlack);
-  layer_add_child(window_layer, text_layer_get_layer(s_empty_text_layer));
-
   // Build the UI from message data
   rebuild_scroll_content();
 
-  // Check if app was launched via quick launch and auto-start dictation
-  if (launch_reason() == APP_LAUNCH_QUICK_LAUNCH && !s_waiting_for_response) {
-    // Start dictation session automatically
+  // Start dictation session automatically when window loads
+  if (!s_waiting_for_response) {
     s_dictation_session = dictation_session_create(sizeof(char) * 256, dictation_session_callback, NULL);
     if (s_dictation_session) {
       dictation_session_start(s_dictation_session);
@@ -138,23 +101,6 @@ static void window_load(Window *window) {
 }
 
 static void rebuild_scroll_content(void) {
-  // Check if we should show empty state or chat UI
-  if (s_message_count == 0) {
-    // Show empty state, hide scroll layer
-    layer_set_hidden(scroll_layer_get_layer(s_scroll_layer), true);
-    layer_set_hidden(claude_spark_get_layer(s_empty_spark), false);
-    layer_set_hidden(text_layer_get_layer(s_empty_text_layer), false);
-
-    // Update action bar for empty state
-    update_action_bar();
-    return;
-  } else {
-    // Show chat UI, hide empty state
-    layer_set_hidden(scroll_layer_get_layer(s_scroll_layer), false);
-    layer_set_hidden(claude_spark_get_layer(s_empty_spark), true);
-    layer_set_hidden(text_layer_get_layer(s_empty_text_layer), true);
-  }
-
   // Save current scroll position to restore after rebuild
   GPoint saved_offset = scroll_layer_get_content_offset(s_scroll_layer);
 
@@ -353,6 +299,12 @@ static void dictation_session_callback(DictationSession *session, DictationSessi
 
     // Send chat request to JS
     send_chat_request();
+  } else {
+    // Dictation was canceled or failed
+    // If there are no messages, return to welcome screen
+    if (s_message_count == 0) {
+      window_stack_pop(true);
+    }
   }
 
   // Clean up the dictation session
@@ -374,23 +326,6 @@ static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
   scroll_layer_set_content_offset(s_scroll_layer, offset, true);
 }
 
-static void back_click_handler(ClickRecognizerRef recognizer, void *context) {
-  if (s_message_count > 0) {
-    // Clear chat history
-    s_message_count = 0;
-    s_waiting_for_response = false;
-
-    // Stop footer animation if running
-    chat_window_set_footer_animating(false);
-
-    // Rebuild UI to show empty state
-    rebuild_scroll_content();
-  } else {
-    // No messages, exit the app
-    window_stack_pop(true);
-  }
-}
-
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
   // Don't allow dictation if waiting for response
   if (s_waiting_for_response) {
@@ -409,7 +344,6 @@ static void click_config_provider(void *context) {
   window_single_repeating_click_subscribe(BUTTON_ID_UP, 100, up_click_handler);
   window_single_repeating_click_subscribe(BUTTON_ID_DOWN, 100, down_click_handler);
   window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
-  window_single_click_subscribe(BUTTON_ID_BACK, back_click_handler);
 }
 
 static void window_unload(Window *window) {
@@ -435,17 +369,6 @@ static void window_unload(Window *window) {
   if (s_footer) {
     chat_footer_destroy(s_footer);
     s_footer = NULL;
-  }
-
-  // Destroy empty state UI
-  if (s_empty_text_layer) {
-    text_layer_destroy(s_empty_text_layer);
-    s_empty_text_layer = NULL;
-  }
-
-  if (s_empty_spark) {
-    claude_spark_layer_destroy(s_empty_spark);
-    s_empty_spark = NULL;
   }
 
   // Destroy UI components

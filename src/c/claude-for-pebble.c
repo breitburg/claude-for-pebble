@@ -2,9 +2,11 @@
 #include "claude_spark.h"
 #include "chat_window.h"
 #include "setup_window.h"
+#include "welcome_window.h"
 
 static Window *s_chat_window;
 static Window *s_setup_window;
+static Window *s_welcome_window;
 static bool s_is_ready = true;  // Assume ready initially, will be corrected by JS
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
@@ -21,31 +23,15 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       s_is_ready = new_ready_state;
 
       if (new_ready_state) {
-        // Need to show chat window
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Transitioning to chat window");
+        // App is now configured - pop the setup window to reveal welcome/chat underneath
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "App configured, removing setup window");
 
-        // Remove setup window if present
         if (s_setup_window && window_stack_contains_window(s_setup_window)) {
-          window_stack_remove(s_setup_window, false);
-        }
-
-        // Create chat window if needed
-        if (!s_chat_window) {
-          s_chat_window = chat_window_create();
-        }
-
-        // Push chat window
-        if (!window_stack_contains_window(s_chat_window)) {
-          window_stack_push(s_chat_window, true);
+          window_stack_remove(s_setup_window, true);
         }
       } else {
         // Need to show setup window
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Transitioning to setup window");
-
-        // Remove chat window if present
-        if (s_chat_window && window_stack_contains_window(s_chat_window)) {
-          window_stack_remove(s_chat_window, false);
-        }
 
         // Create setup window if needed
         if (!s_setup_window) {
@@ -78,6 +64,17 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Outbox send success!");
 }
 
+// Function called by welcome window to transition to chat
+void show_chat_window_from_welcome(void) {
+  // Create chat window if needed
+  if (!s_chat_window) {
+    s_chat_window = chat_window_create();
+  }
+
+  // Push chat window
+  window_stack_push(s_chat_window, true);
+}
+
 static void prv_init(void) {
   // Initialize Claude spark system
   claude_spark_init();
@@ -91,10 +88,16 @@ static void prv_init(void) {
   // Open AppMessage with large inbox (for history) and large outbox (for chunks)
   app_message_open(4096, 4096);
 
-  // Create and push chat window initially
-  // JS will send READY_STATUS=0 if not configured, which will replace with setup window
-  s_chat_window = chat_window_create();
-  window_stack_push(s_chat_window, true);
+  // Check launch reason to determine which window to show
+  if (launch_reason() == APP_LAUNCH_QUICK_LAUNCH) {
+    // Quick launch: go directly to chat window with auto-dictation
+    s_chat_window = chat_window_create();
+    window_stack_push(s_chat_window, true);
+  } else {
+    // Normal launch: show welcome window
+    s_welcome_window = welcome_window_create();
+    window_stack_push(s_welcome_window, true);
+  }
 }
 
 static void prv_deinit(void) {
@@ -109,15 +112,17 @@ static void prv_deinit(void) {
     s_setup_window = NULL;
   }
 
+  if (s_welcome_window) {
+    welcome_window_destroy(s_welcome_window);
+    s_welcome_window = NULL;
+  }
+
   // Deinitialize Claude spark system
   claude_spark_deinit();
 }
 
 int main(void) {
   prv_init();
-
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Done initializing, pushed chat window: %p", s_chat_window);
-
   app_event_loop();
   prv_deinit();
 }

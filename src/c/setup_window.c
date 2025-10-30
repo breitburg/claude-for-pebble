@@ -4,6 +4,19 @@ static Window *s_window;
 static Layer *s_message_layer;
 static GFont s_font;
 
+// Forward declarations
+static void back_click_handler(ClickRecognizerRef recognizer, void *context);
+static void click_config_provider(void *context);
+
+static void back_click_handler(ClickRecognizerRef recognizer, void *context) {
+  // Exit the app when back button is pressed
+  window_stack_pop_all(true);
+}
+
+static void click_config_provider(void *context) {
+  window_single_click_subscribe(BUTTON_ID_BACK, back_click_handler);
+}
+
 static void message_layer_update_proc(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
   const char *text = "Configure Claude\nin settings";
@@ -40,6 +53,9 @@ static void message_layer_update_proc(Layer *layer, GContext *ctx) {
 static void window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
+
+  // Set up click config provider for back button
+  window_set_click_config_provider(window, click_config_provider);
 
   // Get font
   s_font = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
