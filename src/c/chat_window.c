@@ -126,6 +126,15 @@ static void window_load(Window *window) {
 
   // Build the UI from message data
   rebuild_scroll_content();
+
+  // Check if app was launched via quick launch and auto-start dictation
+  if (launch_reason() == APP_LAUNCH_QUICK_LAUNCH && !s_waiting_for_response) {
+    // Start dictation session automatically
+    s_dictation_session = dictation_session_create(sizeof(char) * 256, dictation_session_callback, NULL);
+    if (s_dictation_session) {
+      dictation_session_start(s_dictation_session);
+    }
+  }
 }
 
 static void rebuild_scroll_content(void) {
