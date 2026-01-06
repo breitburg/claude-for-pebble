@@ -30,7 +30,7 @@ This app supports the following Pebble smartwatch models:
 ### Chalk (Round Display)
 <p>
 <img src="screenshots/chalk-welcome.png" width="180" alt="Chalk - Welcome Screen" />
-<img src="screenshots/chalk-chat.png" width="180" alt="Chalk - Chat Interface" />
+<img src="screenshots/chalk-chat-bubbles.png" width="180" alt="Chalk - Chat with Messages" />
 <img src="screenshots/chalk-1.png" width="180" alt="Chalk - Setup Screen" />
 </p>
 
