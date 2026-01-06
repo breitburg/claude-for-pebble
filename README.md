@@ -27,6 +27,12 @@ This app supports the following Pebble smartwatch models:
 <img src="screenshots/basalt-3.png" width="168" alt="Basalt - Loading" />
 </p>
 
+### Chalk (Round Display)
+<p>
+<img src="screenshots/chalk-1.png" width="168" alt="Chalk - Setup Screen" />
+<img src="screenshots/chalk-2.png" width="168" alt="Chalk - Configuration" />
+</p>
+
 ### Diorite
 <p>
 <img src="screenshots/diorite-1.png" width="168" alt="Diorite - Chat Interface" />
